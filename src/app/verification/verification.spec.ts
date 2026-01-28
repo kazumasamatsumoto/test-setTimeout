@@ -110,6 +110,83 @@ describe('Verification', () => {
       // 即座に更新されていることを確認
       expect(component.message()).toBe('即座に実行');
     });
+
+    describe('秒数がわからない場合の対処法', () => {
+      it('方法1: runAllTimers()で全てのタイマーを即座に実行（推奨）', () => {
+        // 秒数がわからない場合、runAllTimers()を使うと全てのタイマーを即座に実行できる
+        component.delayedUpdate('秒数不明でも実行', 999999); // 非常に長い時間でも
+
+        // runAllTimers()で全てのタイマーを即座に実行
+        jest.runAllTimers();
+
+        // 即座に更新されていることを確認
+        expect(component.message()).toBe('秒数不明でも実行');
+      });
+
+      it('方法2: runOnlyPendingTimers()で待機中のタイマーのみ実行', () => {
+        // runOnlyPendingTimers()は、現在待機中のタイマーのみを実行
+        // 再帰的なタイマー（setTimeout内でsetTimeoutを呼ぶ）がある場合に便利
+        component.delayedUpdate('待機中のタイマー', 10000);
+
+        // 待機中のタイマーのみ実行
+        jest.runOnlyPendingTimers();
+
+        expect(component.message()).toBe('待機中のタイマー');
+      });
+
+      it('方法3: 十分に大きな時間を進める', () => {
+        // 秒数がわからないが、最大でも1時間以内とわかっている場合など
+        component.delayedUpdate('大きな時間を進める', 3600000); // 1時間
+
+        // 十分に大きな時間を進める
+        jest.advanceTimersByTime(3600000);
+
+        expect(component.message()).toBe('大きな時間を進める');
+      });
+
+      it('方法4: タイマーが設定されているか確認してから実行', () => {
+        // タイマーが設定されているか確認する方法
+        const initialTimerCount = jest.getTimerCount();
+        
+        component.delayedUpdate('タイマー確認後実行', 5000);
+        
+        // タイマーが1つ増えていることを確認
+        expect(jest.getTimerCount()).toBe(initialTimerCount + 1);
+        
+        // 全てのタイマーを実行
+        jest.runAllTimers();
+        
+        expect(component.message()).toBe('タイマー確認後実行');
+      });
+
+      it('方法5: 段階的に時間を進めて確認', () => {
+        // 秒数がわからない場合、段階的に時間を進めて確認する
+        component.delayedUpdate('段階的に確認', 5000);
+
+        // 1秒ずつ進めて確認
+        jest.advanceTimersByTime(1000);
+        expect(component.message()).not.toBe('段階的に確認'); // まだ実行されていない
+
+        jest.advanceTimersByTime(1000);
+        expect(component.message()).not.toBe('段階的に確認'); // まだ実行されていない
+
+        jest.advanceTimersByTime(3000); // 合計5秒
+        expect(component.message()).toBe('段階的に確認'); // 実行された
+      });
+
+      it('方法6: 複数のタイマーがある場合、全てを一度に実行', () => {
+        // 複数のタイマーがあり、それぞれの秒数がわからない場合
+        component.delayedUpdate('タイマー1', 1000);
+        component.delayedUpdate('タイマー2', 5000);
+        component.delayedUpdate('タイマー3', 10000);
+
+        // runAllTimers()で全てのタイマーを一度に実行
+        jest.runAllTimers();
+
+        // 最後に設定されたタイマーが実行されていることを確認
+        expect(component.message()).toBe('タイマー3');
+      });
+    });
   });
 
   // 注意: jest.config.jsでfakeTimers: { enableGlobally: true }が設定されているため、
