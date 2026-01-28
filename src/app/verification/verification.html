@@ -1,0 +1,14 @@
+<div class="verification-container">
+  <h2>検証用コンポーネント</h2>
+  <p>このコンポーネントはAngular v20の動作確認用です。</p>
+  <div class="info-box">
+    <p><strong>Angularバージョン:</strong> 20.x</p>
+    <p><strong>作成日:</strong> {{ currentDate }}</p>
+    <p><strong>メッセージ:</strong> {{ message() }}</p>
+    <p><strong>カウント:</strong> {{ count() }}</p>
+    <p *ngIf="isLoading()">読み込み中...</p>
+  </div>
+  <button (click)="handleClick()" [disabled]="isLoading()">
+    クリックしてカウント
+  </button>
+</div>
